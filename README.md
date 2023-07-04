@@ -226,3 +226,8 @@ public class PersistenceServiceImpl<T> implements PersistenceService<T> {
     }
 }
 ```
+
+## 项目运行
+
+首先需要在你的数据库中新建一个名为`train`的数据库，然后导入`train.sql`文件。
+在`config/DatabaseConfig`中配置数据库连接信息，然后运行`Main`类即可。
