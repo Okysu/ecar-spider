@@ -21,18 +21,19 @@ public class Model {
     @Column(name = "name")
     private String name;
 
-    @Column(name = "price")
-    private String price;
+    @Column(name = "namespace")
+    private String namespace;
 
     @Column(name = "vid")
     private Integer vid;
 
-    public Model() {}
+    public Model() {
+    }
 
-    public Model(Integer mid, String name, String price, Integer vid) {
+    public Model(Integer mid, String name, String namespace, Integer vid) {
         this.mid = mid;
         this.name = name;
-        this.price = price;
+        this.namespace = namespace;
         this.vid = vid;
     }
 
@@ -60,12 +61,12 @@ public class Model {
         this.name = name;
     }
 
-    public String getPrice() {
-        return price;
+    public String getNamespace() {
+        return namespace;
     }
 
-    public void setPrice(String price) {
-        this.price = price;
+    public void setNamespace(String namespace) {
+        this.namespace = namespace;
     }
 
     public Integer getVid() {
@@ -82,7 +83,7 @@ public class Model {
                 "id=" + id +
                 ", mid=" + mid +
                 ", name='" + name + '\'' +
-                ", price='" + price + '\'' +
+                ", namespace='" + namespace + '\'' +
                 ", vid=" + vid +
                 '}';
     }
