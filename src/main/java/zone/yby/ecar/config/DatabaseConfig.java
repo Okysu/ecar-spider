@@ -16,7 +16,7 @@ public class DatabaseConfig {
     private String url = "jdbc:mysql://localhost:3306/train"; // 数据库连接地址
 
     private String username = "root"; // 数据库用户名
-    private String password = ""; // 数据库密码
+    private String password = "2003"; // 数据库密码
 
     public DatabaseConfig(String url, String username, String password) {
         this.url = url;
