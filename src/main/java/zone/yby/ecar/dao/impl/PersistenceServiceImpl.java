@@ -33,9 +33,8 @@ public class PersistenceServiceImpl<T> implements PersistenceService<T> {
         if (objects == null || objects.size() == 0) {
             return;
         }
-        // 利用反射获取对象的类名，作为数据表名
-        String className = objects.get(0).getClass().getName();
-        String tableName = className.substring(className.lastIndexOf(".") + 1).toLowerCase();
+        // 利用反射获取对象的类名，作为数据表名，但不要获取父类的类名
+        String tableName = objects.get(0).getClass().getSimpleName().toLowerCase();
         // 利用反射获取对象的字段列表
         Field[] fields = objects.get(0).getClass().getDeclaredFields();
         String[] fieldNames = new String[fields.length];
@@ -44,7 +43,7 @@ public class PersistenceServiceImpl<T> implements PersistenceService<T> {
         }
         // 打印表名和字段列表
         System.out.println("tableName: " + tableName);
-//        System.out.println("fields: " + Arrays.toString(fieldNames));
+        System.out.println("fields: " + Arrays.toString(fieldNames));
 //        // 清空数据表内容，防止重复插入
 //        try (Connection conn = DATA_SOURCE.getConnection()) {
 //            try (PreparedStatement pstmt = conn.prepareStatement("TRUNCATE TABLE " + tableName)) {
@@ -54,7 +53,7 @@ public class PersistenceServiceImpl<T> implements PersistenceService<T> {
 //            throw new RuntimeException(e);
 //        }
         // 拼接SQL语句
-        StringBuilder sql = new StringBuilder("INSERT INTO " + tableName + " (");
+        StringBuilder sql = new StringBuilder("INSERT INTO `" + tableName + "` (");
         for (String field : fieldNames) {
             sql.append(field).append(",");
         }
@@ -66,24 +65,37 @@ public class PersistenceServiceImpl<T> implements PersistenceService<T> {
         // 打印SQL语句
         System.out.println("SQL: " + sql);
         // 初始化PreparedStatement
-        try (Connection conn = DATA_SOURCE.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql.toString())) {
+        try (Connection conn = DATA_SOURCE.getConnection()) {
             conn.setAutoCommit(false);
-            // 遍历对象列表
-            for (T object : objects) {
-                // 利用反射获取对象的字段值
-                for (int i = 0; i < fields.length; i++) {
-                    fields[i].setAccessible(true);
-                    Object content = fields[i].get(object);
-                    pstmt.setObject(i + 1, content);
+            PreparedStatement pstmt = null;
+            try {
+                pstmt = conn.prepareStatement(sql.toString());
+                // 遍历对象列表
+                for (T object : objects) {
+                    // 利用反射获取对象的字段值
+                    for (int i = 0; i < fields.length; i++) {
+                        fields[i].setAccessible(true);
+                        Object content = fields[i].get(object);
+                        pstmt.setObject(i + 1, content);
+                    }
+                    // 添加到批处理
+                    pstmt.addBatch();
                 }
-                // 添加到批处理
-                pstmt.addBatch();
+                // 执行批处理
+                pstmt.executeBatch();
+                conn.commit();
+            } catch (SQLException | IllegalAccessException e) {
+                throw new RuntimeException(e);
+            } finally {
+                if (pstmt != null) {
+                    try {
+                        pstmt.close();
+                    } catch (SQLException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
             }
-            // 执行批处理
-            pstmt.executeBatch();
-            conn.commit();
-        } catch (SQLException | IllegalAccessException e) {
+        } catch (SQLException e) {
             throw new RuntimeException(e);
         }
     }
@@ -96,7 +108,7 @@ public class PersistenceServiceImpl<T> implements PersistenceService<T> {
     @Override
     public void empty(String tableName) {
         try (Connection conn = DATA_SOURCE.getConnection()) {
-            try (PreparedStatement pstmt = conn.prepareStatement("TRUNCATE TABLE " + tableName)) {
+            try (PreparedStatement pstmt = conn.prepareStatement("TRUNCATE TABLE `" + tableName + "`")) {
                 pstmt.execute();
             }
         } catch (SQLException e) {
@@ -113,8 +125,7 @@ public class PersistenceServiceImpl<T> implements PersistenceService<T> {
     @Override
     public void get(Class<T> clazz, List<T> objects) {
         // 利用反射获取对象的类名，作为数据表名
-        String className = clazz.getName();
-        String tableName = className.substring(className.lastIndexOf(".") + 1).toLowerCase();
+        String tableName = clazz.getSimpleName().toLowerCase();
         // 利用反射获取对象的字段列表
         Field[] fields = clazz.getDeclaredFields();
         String[] fieldNames = new String[fields.length];
@@ -129,7 +140,7 @@ public class PersistenceServiceImpl<T> implements PersistenceService<T> {
         for (String field : fieldNames) {
             sql.append(field).append(",");
         }
-        sql.deleteCharAt(sql.length() - 1).append(" FROM ").append(tableName);
+        sql.deleteCharAt(sql.length() - 1).append(" FROM ").append("`").append(tableName).append("`");
         // 打印SQL语句
         System.out.println("SQL: " + sql);
         // 初始化PreparedStatement
